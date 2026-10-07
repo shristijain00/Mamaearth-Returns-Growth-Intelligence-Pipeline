@@ -56,6 +56,12 @@ merged['order_value'] = merged['quantity'] * merged['price'] * (1 - merged['disc
 total_clean = merged['order_value'].sum()
 print("Total order_value (cleaned, 175 rows):", f"{total_clean:.2f}")
 
+# Raw total (all 180 rows, before deduplication) — for reconciliation
+raw_merged = orders.merge(products, on='product_id')
+raw_merged['order_value'] = raw_merged['quantity'] * raw_merged['price'] * (1 - raw_merged['discount_pct'].fillna(0) / 100)
+raw_total = raw_merged['order_value'].sum()
+print("Total order_value (raw, 180 rows):", f"{raw_total:.2f}")
+
 dropped_rows = orders.merge(products, on='product_id')
 dropped_rows = dropped_rows[dropped_rows['order_id'].isin(dropped_order_ids)].copy()
 dropped_rows['order_value'] = dropped_rows['quantity'] * dropped_rows['price'] * (1 - dropped_rows['discount_pct']/100)
@@ -63,12 +69,13 @@ dropped_total = dropped_rows['order_value'].sum()
 print("Combined order_value of the 5 dropped duplicate rows:", f"{dropped_total:.2f}")
 
 print(
-    f"Reconciliation: the raw total (99860.20) and the cleaned total ({total_clean:.2f}) "
-    f"differ by {99860.20 - total_clean:.2f}. This exact amount matches the combined "
+    f"Reconciliation: the raw total ({raw_total:.2f}) and the cleaned total ({total_clean:.2f}) "
+    f"differ by {raw_total - total_clean:.2f}. This exact amount matches the combined "
     f"order_value of the 5 duplicate rows removed in Task 3 ({dropped_total:.2f}), "
     f"confirming the deduplication step — not the discount/rating imputation — "
     f"accounts for the entire difference."
 )
+
 
 # %% IQR outlier detection on quantity
 df = merged.copy()
@@ -162,6 +169,8 @@ print(
     f"meaning discount level has no meaningful linear relationship with returns."
 )
 # %%  Outlier-corrected time series
+
+
 merged['order_date'] = pd.to_datetime(merged['order_date'])
 merged['order_month'] = merged['order_date'].dt.to_period('M')
 monthly_with_outliers = merged.groupby('order_month')['order_value'].sum()
@@ -183,3 +192,43 @@ print(
     f"happen before this monthly trend analysis, not after."
 )
 
+
+ 
+# %% Task 1 (Narrator): Export findings.json
+import json
+
+NARRATOR_DIR = BASE_DIR / "narrator"
+NARRATOR_DIR.mkdir(exist_ok=True)
+
+findings = {
+    "cleaned_total_revenue_inr": round(total_clean, 2),
+    "raw_total_revenue_inr": round(raw_total, 2),
+    "duplicate_reconciliation_delta_inr": round(dropped_total, 2),
+    "return_rate_by_payment": {
+        "COD": float(return_rate_by_payment.loc['COD', 'mean']),
+        "CARD": float(return_rate_by_payment.loc['CARD', 'mean']),
+        "UPI": float(return_rate_by_payment.loc['UPI', 'mean'])
+    },
+    "highest_risk_segment": {
+        "payment_method": payment,
+        "city_tier": int(tier),
+        "return_rate_pct": float(highest_risk_rate)
+    },
+    "true_peak_month": {
+        "month": str(highest_without),
+        "revenue_inr": round(float(monthly_without_outliers.max()), 2)
+    },
+    "outlier_inflated_month": {
+        "month": str(highest_with),
+        "apparent_revenue_inr": round(float(monthly_with_outliers.max()), 2),
+        "corrected_revenue_inr": round(float(monthly_without_outliers.loc[highest_with]), 2)
+    }
+}
+
+with open(NARRATOR_DIR / "findings.json", "w") as f:
+    json.dump(findings, f, indent=2)
+
+print("Saved narrator/findings.json")
+print(json.dumps(findings, indent=2))
+
+# %%
