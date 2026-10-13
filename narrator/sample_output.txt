@@ -1,0 +1,8 @@
+Situation
+Our cleaned total revenue stands at INR 97358.3, adjusted from a raw total revenue of INR 99860.2 due to a revenue removed by deduplication of INR 2501.9. Looking at temporal trends, the true peak month is March (2026-03) at INR 20318.9. Additionally, 2026-01 appeared as INR 29582.1 before adjusting, but is INR 11637.1 after excluding bulk-order outliers.
+
+Complication
+Across payment methods, the return rate by payment method is COD 44.4%, CARD 14.7%, and UPI 18.9%. The highest-risk segment is identified as COD in Tier-2 cities at a 54.5% return rate.
+
+Resolution
+Operations and finance heads must focus attention on COD in Tier-2 cities, given its 54.5% return rate, and account for the payment-specific return rates of COD 44.4%, CARD 14.7%, and UPI 18.9%. Planning should also incorporate the corrected figures for March (2026-03) at INR 20318.9 and 2026-01 at INR 11637.1, while noting the cleaned total revenue of INR 97358.3 and the revenue removed by deduplication of INR 2501.9 from the raw total revenue of INR 99860.2.
